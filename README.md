@@ -87,6 +87,76 @@ UPDATE admin_user SET role = 'ADMIN' WHERE username = '你的账号';
 
 用户上传的图片保存在服务器磁盘 `UPLOAD_DIR`（按日期分目录），数据库仅存地址字符串（如 `/uploads/20261014/xxx.png`）。备份 / 迁移时请「数据库 + uploads 目录」一起处理。
 
-## 接口约定
+## 接口文档
 
-后端统一返回 `{ code, message, data, timestamp }`，`code = 0` 为成功。接口清单见两份契约文档。
+- 统一返回体：`{ code, message, data, timestamp }`，`code = 0` 为成功；
+- **鉴权规则**：公开 `GET`（前台只读）匿名可访问；所有**写操作**与 `/api/me/**` 需要 `Authorization: Bearer <JWT>`（登录 / 注册 / 刷新除外）；
+- 前端层：`frontend/src/api/*`（axios 封装：自动带 Token、统一解包、401 处理）。
+
+### 认证与个人中心 `/api/auth`、`/api/me`
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|---|---|---|---|
+| POST | `/api/auth/login` | 公开 | 登录，返回 `{ token, username, nickname, role }` |
+| POST | `/api/auth/register` | 公开 | 注册（默认角色 USER），成功即返回 Token |
+| GET | `/api/auth/me` | 登录 | 当前用户（含 role，用于刷新权限） |
+| GET | `/api/auth/profile` | 登录 | 个人中心资料（不含密码） |
+| PUT | `/api/auth/profile` | 登录 | 改昵称 / 头像（头像需先经 `/api/upload`） |
+| PUT | `/api/auth/password` | 登录 | 改密码（校验原密码，6~64 位） |
+| GET | `/api/me/attention-points` | 登录 | 我的注意力点数（每日重置后实时余额） |
+
+### 帖子与回复 `/api/posts`、`/api/replies`
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|---|---|---|---|
+| GET | `/api/posts/published` | 公开 | 前台列表（置顶优先，时间倒序） |
+| GET | `/api/posts` | 公开 | 后台分页（`page` / `pageSize` / `keyword`） |
+| GET | `/api/posts/{id}` | 公开 | 详情（作者信息由 `employee` 表组装） |
+| POST | `/api/posts` | 登录 | 发帖（**扣 100 注意力点数**，正文/配图至少其一） |
+| PUT | `/api/posts/{id}` | 登录 | 编辑帖子 |
+| DELETE | `/api/posts/{id}` | 登录 | 软删除 |
+| PATCH | `/api/posts/{id}/pin?pinned=` | 登录 | 置顶 / 取消（**query 参数**，非 body） |
+| GET | `/api/posts/{postId}/replies` | 公开 | 回复列表（时间正序） |
+| POST | `/api/posts/{postId}/replies` | 登录 | 回复（**扣 50 注意力点数**，作者取 JWT） |
+| DELETE | `/api/replies/{id}` | 登录 | 删除回复 |
+
+### 商品 `/api/products`
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|---|---|---|---|
+| GET | `/api/products` / `/on-sale` / `/{id}` | 公开 | 列表 / 前台上架列表 / 详情 |
+| POST | `/api/products` | 登录 | 新增（后台） |
+| PUT | `/api/products/{id}` | 登录 | 编辑 |
+| DELETE | `/api/products/{id}` | 登录 | 软删除 |
+| PATCH | `/api/products/{id}/status?status=` | 登录 | 上下架（query 参数） |
+
+### 寻人启事 `/api/missing-persons`
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|---|---|---|---|
+| GET | `/api/missing-persons` / `/on-sale` / `/{id}` | 公开 | 分页（`page`/`pageSize`/`keyword`/`status`）/ 前台列表 / 详情 |
+| POST | `/api/missing-persons` | 登录 | 新增人物 |
+| PUT | `/api/missing-persons/{id}` | 登录 | 编辑 |
+| DELETE | `/api/missing-persons/{id}` | 登录 | 软删除 |
+| PATCH | `/api/missing-persons/{id}/status?status=` | 登录 | 上下架 |
+| PATCH | `/api/missing-persons/{id}/submit` | 登录 | 前台「提交线索」→ `submitted=true`（幂等） |
+| DELETE | `/api/missing-persons/{id}/submit` | 登录 | 后台重置提交态 |
+
+### 其它
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|---|---|---|---|
+| GET | `/api/employees`、`/page`、`/{id}` | 公开 | 员工列表 / 分页 / 详情 |
+| GET | `/api/dashboard` | 登录 | 控制台统计（帖子/商品/寻人/员工数） |
+| GET | `/api/logs?page=&pageSize=` | 登录 | 操作日志分页 |
+| POST | `/api/upload` | 登录 | 图片上传（multipart 字段名 `file`，≤50MB），返回 `/uploads/yyyyMMdd/xxx.png`；图片本体存磁盘 `UPLOAD_DIR`，数据库只存地址 |
+
+## 后端环境变量
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `DB_USERNAME` / `DB_PASSWORD` | `root` / `change-me` | 数据库账号 |
+| `JWT_SECRET` | 开发默认值 | **生产必改**（≥48 位随机串） |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_NICKNAME` | `admin` / `admin123` / `集团管理员` | 首次启动自动创建的管理员（表为空时） |
+| `UPLOAD_DIR` | `./uploads` | 上传图片目录（生产用绝对路径） |
+| `CORS_ORIGINS` | `http://localhost:5173` | 允许的跨域来源 |
