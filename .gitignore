@@ -1,0 +1,22 @@
+# 依赖与构建产物
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+target/
+backend/target/
+
+# 运行时数据（上传的图片不进 Git）
+uploads/
+backend/uploads/
+
+# 日志与临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/

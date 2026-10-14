@@ -1,0 +1,374 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   HAAVK Design Token —— 与 tailwind.config.js 保持一致
+   ========================================================================== */
+:root {
+  --haavk-blue: #2379d8;
+  --haavk-blue-light: #58b8f4;
+  --haavk-blue-deep: #1b5fae;
+  --haavk-bg: #e9eef4;
+  --haavk-panel: rgba(245, 248, 252, 0.82);
+  --haavk-panel-solid: #f5f8fc;
+  --haavk-dark: #252a30;
+  --haavk-dark-2: #1b1f24;
+  --haavk-text: #182027;
+  --haavk-muted: #68727c;
+  --haavk-border: #b9c8d8;
+  --haavk-red: #e53b3b;
+  --haavk-amber: #d9902b;
+  --haavk-green: #2ea36b;
+
+  --haavk-header-h: 60px;
+  --haavk-bottom-h: 34px;
+
+  /* ---- 首页 Hero / 员工区 共享几何量（改这里即可，两侧自动对齐） ---- */
+  /* Hero 浅色带基础高度 */
+  --haavk-hero-h: clamp(400px, 50vh, 540px);
+  /* 浅色带向下延伸到「员工卡顶边」的额外高度 = 展示区上内边距 + 标题行高度 */
+  --haavk-title-row: 78px;
+  /* 优秀员工卡高度（人物层下探深度与之对齐）
+     取值偏「方/宽」而不是瘦高 —— 参考图里这两张卡接近 1:1 */
+  --haavk-card-h: clamp(240px, 27vh, 290px);
+
+  /* ---- 内容页（论坛/解决方案/寻人启事）导航与版心 ----
+     参考图（1920 宽实测）：导航/正文左右边距均约 4.6%，即版心宽约 90.7%。
+     导航**贴页面顶端**（与首页及后台页一致，用户明确要求不要下沉）。 */
+  --haavk-content-w: 90.7%;
+  /* 正文顶边：导航 60px + 52px 间距（间距取参考图里导航与正文之间那段空隙） */
+  --haavk-body-top: 12.3vh;
+  /* 正文区高度：正文底边 ≈ 页面 92.5% 处（底部状态栏上方留一段空隙） */
+  --haavk-body-h: 80.2vh;
+  /* 论坛表格线色 */
+  --haavk-row-line: rgba(122, 152, 190, 0.42);
+  --haavk-head-line: #2f6fbb;
+}
+
+/* 断点下同步这三个量，保证分界线始终落在卡片顶边 */
+@media (max-width: 1024px) {
+  :root {
+    /* 展示区上内边距改为 30px → 30 + 44(标题行) */
+    --haavk-title-row: 74px;
+    --haavk-card-h: 280px;
+  }
+}
+@media (max-width: 560px) {
+  :root {
+    /* 展示区上内边距改为 26px → 26 + 44(标题行) */
+    --haavk-title-row: 70px;
+    --haavk-card-h: 250px;
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: theme('fontFamily.sans');
+    font-size: 16px;
+    color: var(--haavk-text);
+    background-color: var(--haavk-bg);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* 防止长串文本 / 内容撑破容器造成横向溢出 */
+  img,
+  svg,
+  table {
+    max-width: 100%;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  ::selection {
+    background: rgba(35, 121, 216, 0.25);
+  }
+
+  /* 滚动条：细、科技感 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(185, 200, 216, 0.25);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--haavk-border);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--haavk-blue);
+    background-clip: content-box;
+  }
+}
+
+/* ==========================================================================
+   Components —— HUD 视觉语言（直角/细线/斜切/终端装饰）
+   ========================================================================== */
+@layer components {
+  /* 面板：半透明浅面板 + 细边框 */
+  .hud-panel {
+    position: relative;
+    background: var(--haavk-panel);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--haavk-border);
+    border-radius: 2px;
+  }
+
+  /* 面板四角小直角装饰 */
+  .hud-corners::before,
+  .hud-corners::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--haavk-blue);
+    border-style: solid;
+    pointer-events: none;
+  }
+  .hud-corners::before {
+    top: -1px;
+    left: -1px;
+    border-width: 2px 0 0 2px;
+  }
+  .hud-corners::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 2px 2px 0;
+  }
+
+  /* 斜切角（右上/左下切角，战术面板感） */
+  .hud-clip {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 14px) 0,
+      100% 14px,
+      100% 100%,
+      14px 100%,
+      0 calc(100% - 14px)
+    );
+  }
+
+  /* 标题左侧竖条 */
+  .hud-bar::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 0.9em;
+    margin-right: 8px;
+    vertical-align: -0.1em;
+    background: var(--haavk-blue);
+    box-shadow: 0 0 8px rgba(35, 121, 216, 0.6);
+  }
+
+  /* HUD 小标签 */
+  .hud-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--haavk-border);
+    background: rgba(35, 121, 216, 0.06);
+    color: var(--haavk-muted);
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .hud-tag--blue {
+    color: #fff;
+    background: var(--haavk-blue);
+    border-color: var(--haavk-blue);
+  }
+  .hud-tag--outline {
+    color: var(--haavk-blue);
+    border-color: rgba(35, 121, 216, 0.5);
+    background: rgba(35, 121, 216, 0.08);
+  }
+  .hud-tag--dashed {
+    border-style: dashed;
+  }
+
+  /* 按钮 */
+  .hud-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--haavk-blue);
+    background: var(--haavk-blue);
+    color: #fff;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 180ms ease;
+  }
+  .hud-btn:hover:not(:disabled) {
+    background: var(--haavk-blue-deep);
+    border-color: var(--haavk-blue-deep);
+  }
+  .hud-btn:disabled {
+    cursor: not-allowed;
+    background: #c3ced9;
+    border-color: #c3ced9;
+    color: #fff;
+  }
+  .hud-btn--ghost {
+    background: transparent;
+    color: var(--haavk-blue);
+  }
+  .hud-btn--ghost:hover:not(:disabled) {
+    background: rgba(35, 121, 216, 0.1);
+    border-color: var(--haavk-blue);
+    color: var(--haavk-blue-deep);
+  }
+  .hud-btn--danger {
+    background: var(--haavk-red);
+    border-color: var(--haavk-red);
+  }
+  .hud-btn--danger:hover:not(:disabled) {
+    background: #c62f2f;
+    border-color: #c62f2f;
+  }
+  .hud-btn--sm {
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+
+  /* 输入框 */
+  .hud-input {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--haavk-text);
+    background: #fff;
+    border: 1px solid var(--haavk-border);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .hud-input:focus {
+    border-color: var(--haavk-blue);
+    box-shadow: 0 0 0 3px rgba(35, 121, 216, 0.14);
+  }
+  .hud-input::placeholder {
+    color: #9aa7b4;
+  }
+
+  /* 表格（科技感） */
+  .hud-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .hud-table thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--haavk-muted);
+    text-transform: uppercase;
+    padding: 10px 14px;
+    background: rgba(35, 121, 216, 0.06);
+    border-bottom: 1px solid var(--haavk-border);
+    white-space: nowrap;
+  }
+  .hud-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(185, 200, 216, 0.55);
+    vertical-align: middle;
+  }
+  .hud-table tbody tr {
+    transition: background 150ms ease;
+  }
+  .hud-table tbody tr:hover {
+    background: rgba(35, 121, 216, 0.06);
+  }
+
+  /* 终端文字 */
+  .hud-mono {
+    font-family: theme('fontFamily.mono');
+    letter-spacing: 0.08em;
+  }
+
+  /* 网格背景 */
+  .hud-grid-bg {
+    background-image: linear-gradient(rgba(35, 121, 216, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(35, 121, 216, 0.07) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* 斜线纹理 */
+  .hud-stripe {
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgba(35, 121, 216, 0.14) 0 6px,
+      transparent 6px 12px
+    );
+  }
+
+  .container-haavk {
+    width: 100%;
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container-haavk {
+    padding: 0 16px;
+  }
+}
+
+/* ==========================================================================
+   Utilities / 动画
+   ========================================================================== */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

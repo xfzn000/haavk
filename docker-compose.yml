@@ -1,0 +1,47 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: haavk-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: haavk
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - haavk-mysql-data:/var/lib/mysql
+      # 首次启动自动初始化（按文件名顺序执行）
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: haavk-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET:-haavk-docker-secret-please-change-0123456789abcdef}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+
+volumes:
+  haavk-mysql-data:
